@@ -25,26 +25,37 @@ if not os.path.exists(USERS_FILE):
 # -----------------------------
 # Auth / User functions
 # -----------------------------
+# -----------------------------
+# User functions (works with your CSV)
+# -----------------------------
+USERS_FILE = "users.csv"
+
 def load_users():
     return pd.read_csv(USERS_FILE)
 
 def save_users(df):
     df.to_csv(USERS_FILE, index=False)
 
-def create_user(username, password):
+def create_user(username, password, role="user"):
     df = load_users()
     if username in df['username'].values:
         raise ValueError("Username already exists")
     hashed = generate_password_hash(password)
-    df = pd.concat([df, pd.DataFrame([{"username": username, "password_hash": hashed}])])
+    next_id = df['id'].max() + 1 if not df.empty else 1
+    df = pd.concat([df, pd.DataFrame([{
+        "id": next_id,
+        "username": username,
+        "password_hash": hashed,
+        "role": role
+    }])])
     save_users(df)
 
 def authenticate_user(username, password):
     df = load_users()
     user = df[df['username'] == username]
     if not user.empty and check_password_hash(user.iloc[0]['password_hash'], password):
-        return True
-    return False
+        return user.iloc[0]['role']
+    return None
 
 # -----------------------------
 # Movie functions
