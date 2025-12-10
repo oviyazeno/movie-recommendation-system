@@ -28,34 +28,48 @@ if not os.path.exists(USERS_FILE):
 # -----------------------------
 # User functions (works with your CSV)
 # -----------------------------
+
 USERS_FILE = "users.csv"
 
 def load_users():
-    return pd.read_csv(USERS_FILE)
+    import os
+    import pandas as pd
+    if not os.path.exists(USERS_FILE):
+        # create empty CSV if not exists
+        pd.DataFrame(columns=["username","password_hash"]).to_csv(USERS_FILE,index=False)
+    try:
+        df = pd.read_csv(USERS_FILE)
+        if 'username' not in df.columns:
+            # CSV has no headers → assign
+            df = pd.read_csv(USERS_FILE, header=None, names=["username","password_hash"])
+    except:
+        df = pd.DataFrame(columns=["username","password_hash"])
+    return df
 
 def save_users(df):
-    df.to_csv(USERS_FILE, index=False)
+    df.to_csv(USERS_FILE, index=False, header=True)
 
-def create_user(username, password, role="user"):
+def create_user(username, password):
+    from werkzeug.security import generate_password_hash
     df = load_users()
     if username in df['username'].values:
         raise ValueError("Username already exists")
     hashed = generate_password_hash(password)
-    next_id = df['id'].max() + 1 if not df.empty else 1
     df = pd.concat([df, pd.DataFrame([{
-        "id": next_id,
         "username": username,
-        "password_hash": hashed,
-        "role": role
-    }])])
+        "password_hash": hashed
+    }])], ignore_index=True)
     save_users(df)
 
 def authenticate_user(username, password):
+    from werkzeug.security import check_password_hash
     df = load_users()
     user = df[df['username'] == username]
     if not user.empty and check_password_hash(user.iloc[0]['password_hash'], password):
-        return user.iloc[0]['role']
+        # simple admin check: username 'admin' is admin
+        return "admin" if username.lower() == "admin" else "user"
     return None
+
 
 # -----------------------------
 # Movie functions
