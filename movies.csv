@@ -1,0 +1,125 @@
+﻿1,Inception,2010,Sci-Fi,Christopher Nolan,8.8,English,148,2025-11-29 16:04:01.663
+2,Interstellar,2014,Sci-Fi,Christopher Nolan,8.6,English,169,2025-11-29 16:04:01.663
+3,The Dark Knight,2008,Action,Christopher Nolan,9.0,English,152,2025-11-29 16:04:01.663
+4,KGF Chapter 1,2018,Action,Prashanth Neel,8.2,Kannada,155,2025-11-29 16:04:01.663
+5,Vikram,2022,Action Thriller,Lokesh Kanagaraj,8.3,Tamil,175,2025-11-29 16:04:01.663
+6,Baahubali,2015,Epic,S. S. Rajamouli,8.0,Telugu,159,2025-11-29 16:04:01.663
+22,The Shawshank Redemption,1994,Drama,Frank Darabont,9.3,English,142,2025-11-29 19:50:47.000
+23,The Godfather,1972,Crime,Francis Ford Coppola,9.2,English,175,2025-11-29 19:50:47.003
+24,The Dark Knight Rises,2012,Action,Christopher Nolan,8.4,English,164,2025-11-29 19:50:47.007
+25,Fight Club,1999,Drama,David Fincher,8.8,English,139,2025-11-29 19:50:47.010
+26,Avatar,2009,Sci-Fi,James Cameron,7.8,English,162,2025-11-29 19:50:47.013
+27,Titanic,1997,Romance,James Cameron,7.9,English,195,2025-11-29 19:50:47.020
+28,Joker,2019,Crime,Todd Phillips,8.4,English,122,2025-11-29 19:50:47.023
+29,Dangal,2016,Sports Drama,Nitesh Tiwari,8.4,Hindi,161,2025-11-29 19:50:47.027
+30,RRR,2022,Action Drama,S. S. Rajamouli,8.0,Telugu,182,2025-11-29 19:50:47.030
+31,Pushpa: The Rise,2021,Action,Sukumar,7.6,Telugu,179,2025-11-29 19:50:47.033
+32,Parasite,2019,Thriller,Bong Joon-ho,8.6,Korean,132,2025-11-29 19:50:47.037
+33,Oldboy,2003,Thriller,Park Chan-wook,8.4,Korean,120,2025-11-29 19:50:47.043
+34,Tenet,2020,Sci-Fi,Christopher Nolan,7.3,English,150,2025-11-29 19:50:47.047
+35,Mad Max: Fury Road,2015,Action,George Miller,8.1,English,120,2025-11-29 19:50:47.050
+40,The Godfather Part II,1974,Crime,Francis Ford Coppola,9.0,English,202,2025-11-29 19:52:08.517
+42,Memento,2000,Thriller,Christopher Nolan,8.4,English,113,2025-11-29 19:52:08.523
+43,Dunkirk,2017,War,Christopher Nolan,7.9,English,106,2025-11-29 19:52:08.530
+45,Shutter Island,2010,Mystery Thriller,Martin Scorsese,8.2,English,138,2025-11-29 19:52:08.537
+46,The Departed,2006,Crime Thriller,Martin Scorsese,8.5,English,151,2025-11-29 19:52:08.540
+47,Goodfellas,1990,Crime,Martin Scorsese,8.7,English,146,2025-11-29 19:52:08.543
+48,Inglourious Basterds,2009,War,Quentin Tarantino,8.3,English,153,2025-11-29 19:52:08.550
+49,Pulp Fiction,1994,Crime,Quentin Tarantino,8.9,English,154,2025-11-29 19:52:08.553
+50,Kill Bill Vol. 1,2003,Action,Quentin Tarantino,8.1,English,111,2025-11-29 19:52:08.557
+51,Kill Bill Vol. 2,2004,Action,Quentin Tarantino,8.0,English,137,2025-11-29 19:52:08.557
+52,Once Upon a Time in Hollywood,2019,Drama,Quentin Tarantino,7.6,English,161,2025-11-29 19:52:08.560
+54,Gone Girl,2014,Thriller,David Fincher,8.1,English,149,2025-11-29 19:52:08.567
+55,The Social Network,2010,Drama,David Fincher,7.7,English,120,2025-11-29 19:52:08.570
+56,Zodiac,2007,Thriller,David Fincher,7.7,English,157,2025-11-29 19:52:08.573
+57,Se7en,1995,Crime Thriller,David Fincher,8.6,English,127,2025-11-29 19:52:08.577
+58,The Matrix,1999,Sci-Fi,Wachowski Sisters,8.7,English,136,2025-11-29 19:52:08.580
+59,The Matrix Reloaded,2003,Sci-Fi,Wachowski Sisters,7.2,English,138,2025-11-29 19:52:08.587
+60,The Matrix Revolutions,2003,Sci-Fi,Wachowski Sisters,6.8,English,129,2025-11-29 19:52:08.590
+61,John Wick,2014,Action,Chad Stahelski,7.4,English,101,2025-11-29 19:52:08.593
+62,John Wick: Chapter 2,2017,Action,Chad Stahelski,7.5,English,122,2025-11-29 19:52:08.600
+63,John Wick: Chapter 3,2019,Action,Chad Stahelski,7.4,English,131,2025-11-29 19:52:08.600
+65,Gladiator,2000,Action Drama,Ridley Scott,8.5,English,155,2025-11-29 19:52:08.607
+66,The Martian,2015,Sci-Fi,Ridley Scott,8.0,English,144,2025-11-29 19:52:08.610
+67,Alien,1979,Sci-Fi Horror,Ridley Scott,8.5,English,117,2025-11-29 19:52:08.613
+68,Blade Runner,1982,Sci-Fi,Ridley Scott,8.1,English,117,2025-11-29 19:52:08.620
+69,Blade Runner 2049,2017,Sci-Fi,Denis Villeneuve,8.0,English,164,2025-11-29 19:52:08.623
+70,Arrival,2016,Sci-Fi,Denis Villeneuve,7.9,English,116,2025-11-29 19:52:08.627
+71,Sicario,2015,Thriller,Denis Villeneuve,7.6,English,121,2025-11-29 19:52:08.630
+72,Prisoners,2013,Thriller,Denis Villeneuve,8.1,English,153,2025-11-29 19:52:08.637
+73,Whiplash,2014,Drama,Damien Chazelle,8.5,English,106,2025-11-29 19:52:08.640
+74,La La Land,2016,Romantic Drama,Damien Chazelle,8.0,English,128,2025-11-29 19:52:08.643
+75,Interstellar 5555,2003,Music Sci-Fi,Kazuhisa Takenouchi,7.8,Japanese,68,2025-11-29 19:52:08.647
+76,Spider-Man: No Way Home,2021,Superhero,Jon Watts,8.2,English,148,2025-11-29 19:52:08.650
+77,Spider-Man: Homecoming,2017,Superhero,Jon Watts,7.4,English,133,2025-11-29 19:52:08.657
+78,Iron Man,2008,Superhero,Jon Favreau,7.9,English,126,2025-11-29 19:52:08.660
+79,Iron Man 2,2010,Superhero,Jon Favreau,7.0,English,124,2025-11-29 19:52:08.663
+80,Iron Man 3,2013,Superhero,Shane Black,7.1,English,130,2025-11-29 19:52:08.663
+81,The Avengers,2012,Superhero,Joss Whedon,8.0,English,143,2025-11-29 19:52:08.670
+82,Avengers: Infinity War,2018,Superhero,Russo Brothers,8.4,English,149,2025-11-29 19:52:08.670
+83,Avengers: Endgame,2019,Superhero,Russo Brothers,8.4,English,181,2025-11-29 19:52:08.677
+84,Black Panther,2018,Superhero,Ryan Coogler,7.3,English,134,2025-11-29 19:52:08.680
+133,Thor: Ragnarok,2017,Superhero,Taika Waititi,7.9,English,130,2025-11-29 19:54:41.710
+134,Guardians of the Galaxy,2014,Superhero,James Gunn,8.0,English,121,2025-11-29 19:54:41.713
+135,Guardians of the Galaxy Vol. 2,2017,Superhero,James Gunn,7.6,English,136,2025-11-29 19:54:41.717
+136,Ant-Man,2015,Superhero,Peyton Reed,7.3,English,117,2025-11-29 19:54:41.720
+137,Ant-Man and the Wasp,2018,Superhero,Peyton Reed,7.1,English,118,2025-11-29 19:54:41.723
+138,Captain America: The First Avenger,2011,Superhero,Joe Johnston,6.9,English,124,2025-11-29 19:54:41.727
+139,Captain America: The Winter Soldier,2014,Superhero,Anthony Russo,7.7,English,136,2025-11-29 19:54:41.730
+140,Captain America: Civil War,2016,Superhero,Anthony Russo,7.8,English,147,2025-11-29 19:54:41.733
+141,Black Widow,2021,Superhero,Cate Shortland,6.8,English,134,2025-11-29 19:54:41.737
+142,Doctor Sleep,2019,Horror,Mike Flanagan,7.3,English,152,2025-11-29 19:54:41.740
+143,It,2017,Horror,Andy Muschietti,7.3,English,135,2025-11-29 19:54:41.743
+144,It Chapter Two,2019,Horror,Andy Muschietti,6.5,English,169,2025-11-29 19:54:41.747
+145,The Conjuring,2013,Horror,James Wan,7.5,English,112,2025-11-29 19:54:41.750
+146,The Conjuring 2,2016,Horror,James Wan,7.3,English,134,2025-11-29 19:54:41.753
+147,Insidious,2010,Horror,James Wan,6.8,English,103,2025-11-29 19:54:41.757
+148,Insidious: Chapter 2,2013,Horror,James Wan,6.6,English,106,2025-11-29 19:54:41.760
+149,The Nun,2018,Horror,Corin Hardy,5.3,English,96,2025-11-29 19:54:41.763
+150,A Quiet Place,2018,Horror,John Krasinski,7.5,English,90,2025-11-29 19:54:41.767
+151,A Quiet Place Part II,2020,Horror,John Krasinski,7.2,English,97,2025-11-29 19:54:41.770
+152,Coco,2017,Animation,Lee Unkrich,8.4,English,105,2025-11-29 19:54:41.773
+153,Toy Story,1995,Animation,John Lasseter,8.3,English,81,2025-11-29 19:54:41.777
+154,Toy Story 2,1999,Animation,John Lasseter,7.9,English,92,2025-11-29 19:54:41.780
+155,Toy Story 3,2010,Animation,Lee Unkrich,8.3,English,103,2025-11-29 19:54:41.783
+156,Toy Story 4,2019,Animation,Josh Cooley,7.8,English,100,2025-11-29 19:54:41.787
+157,Up,2009,Animation,Pete Docter,8.2,English,96,2025-11-29 19:54:41.790
+158,Inside Out,2015,Animation,Pete Docter,8.1,English,95,2025-11-29 19:54:41.790
+159,Finding Nemo,2003,Animation,Andrew Stanton,8.1,English,100,2025-11-29 19:54:41.790
+160,Finding Dory,2016,Animation,Andrew Stanton,7.3,English,97,2025-11-29 19:54:41.793
+161,Shrek,2001,Animation,Andrew Adamson,7.8,English,90,2025-11-29 19:54:41.797
+162,Shrek 2,2004,Animation,Andrew Adamson,7.2,English,93,2025-11-29 19:54:41.800
+163,Shrek the Third,2007,Animation,Chris Miller,6.1,English,93,2025-11-29 19:54:41.800
+164,Shrek Forever After,2010,Animation,Mike Mitchell,6.3,English,93,2025-11-29 19:54:41.803
+165,The Lion King,1994,Animation,Roger Allers,8.5,English,88,2025-11-29 19:54:41.810
+166,The Lion King (2019),2019,Animation,Jon Favreau,6.9,English,118,2025-11-29 19:54:41.810
+167,Aladdin,1992,Animation,Ron Clements,8.0,English,90,2025-11-29 19:54:41.810
+168,Aladdin (2019),2019,Adventure,Guy Ritchie,7.0,English,128,2025-11-29 19:54:41.817
+169,Moana,2016,Animation,Ron Clements,7.6,English,107,2025-11-29 19:54:41.820
+170,Frozen,2013,Animation,Chris Buck,7.5,English,102,2025-11-29 19:54:41.823
+171,Frozen II,2019,Animation,Chris Buck,6.9,English,103,2025-11-29 19:54:41.830
+172,Zootopia,2016,Animation,Byron Howard,8.0,English,108,2025-11-29 19:54:41.833
+173,Ratatouille,2007,Animation,Brad Bird,8.0,English,111,2025-11-29 19:54:41.837
+174,WALL-E,2008,Animation,Andrew Stanton,8.4,English,98,2025-11-29 19:54:41.840
+175,Cinderella,1950,Animation,Clyde Geronimi,7.3,English,74,2025-11-29 19:54:41.843
+176,Sleeping Beauty,1959,Animation,Clyde Geronimi,7.3,English,75,2025-11-29 19:54:41.847
+177,Beauty and the Beast,1991,Animation,Gary Trousdale,8.0,English,84,2025-11-29 19:54:41.853
+178,The Little Mermaid,1989,Animation,Ron Clements,7.6,English,83,2025-11-29 19:54:41.857
+179,Mulan,1998,Animation,Barry Cook,7.6,English,88,2025-11-29 19:54:41.860
+180,Mulan (2020),2020,Action Adventure,Niki Caro,5.6,English,115,2025-11-29 19:54:41.867
+181,Brave,2012,Animation,Mark Andrews,7.1,English,93,2025-11-29 19:54:41.867
+182,Tangled,2010,Animation,Nathan Greno,7.7,English,100,2025-11-29 19:54:41.867
+183,The Incredibles,2004,Animation,Brad Bird,8.0,English,115,2025-11-29 19:54:41.870
+184,The Incredibles 2,2018,Animation,Brad Bird,7.6,English,118,2025-11-29 19:54:41.877
+185,Big Hero 6,2014,Animation,Don Hall,7.8,English,102,2025-11-29 19:54:41.880
+186,Interstellar,2014,Sci-Fi,Christopher Nolan,8.6,English,169,2025-11-30 19:54:43.410
+187,Avatar,2009,Sci-Fi,James Cameron,7.8,English,162,2025-11-30 21:16:39.987
+188,Titanic,1997,Romance Drama,James Cameron,7.9,English,195,2025-11-30 21:16:39.987
+189,Inception,2010,Sci-Fi,Christopher Nolan,8.8,English,148,2025-11-30 21:16:39.990
+190,Interstellar,2014,Sci-Fi,Christopher Nolan,8.6,English,169,2025-11-30 21:16:39.990
+191,The Dark Knight,2008,Action,Christopher Nolan,9.0,English,152,2025-11-30 21:16:39.993
+192,Avatar,2009,Sci-Fi,James Cameron,7.8,English,162,2025-11-30 22:04:15.760
+193,Titanic,1997,"Romance, Drama",James Cameron,7.9,English,195,2025-11-30 22:04:15.760
+194,Inception,2010,Sci-Fi,Christopher Nolan,8.8,English,148,2025-11-30 22:04:15.760
+195,Interstellar,2014,Sci-Fi,Christopher Nolan,8.6,English,169,2025-11-30 22:04:15.760
+196,The Dark Knight,2008,Action,Christopher Nolan,9.0,English,152,2025-11-30 22:04:15.760
