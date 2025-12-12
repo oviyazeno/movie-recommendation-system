@@ -68,7 +68,7 @@ def save_movies(df):
 
 def add_movie(title, year, genre, director, rating, language, duration):
     df = load_movies()
-    new_id = df['movie_id'].max() + 1 if not df.empty else 1
+    new_id = int(df['movie_id'].max()) + 1 if not df.empty else 1
     df = pd.concat([df, pd.DataFrame([{
         "movie_id": new_id,
         "title": title,
@@ -101,27 +101,31 @@ def delete_movie(movie_id):
 def get_recommendations(df, base_title, topn=5):
     if df.empty or not base_title.strip():
         return pd.DataFrame()
+
     df = df.copy()
     df['combined'] = df['genre'].fillna('') + " " + df['director'].fillna('')
+
+    if df['combined'].str.strip().eq('').all():
+        return pd.DataFrame()
+
     vec = TfidfVectorizer(stop_words='english')
     tfidf = vec.fit_transform(df['combined'])
-    
-    # Escape regex characters
+
     matches = df[df['title'].str.contains(re.escape(base_title), case=False, na=False)]
     if matches.empty:
         return pd.DataFrame()
-    
+
     base_idx = matches.index[0]
     cos_sim = linear_kernel(tfidf, tfidf)
     sim_scores = list(enumerate(cos_sim[base_idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
     sim_scores = [s for s in sim_scores if s[0] != base_idx][:topn]
-    
+
     indices = [i[0] for i in sim_scores]
     return df.iloc[indices][['movie_id','title','genre','imdb_rating']]
 
 # -----------------------------
-# Logout helper
+# Helpers
 # -----------------------------
 def safe_logout():
     st.session_state.logged_in = False
@@ -132,6 +136,11 @@ def safe_logout():
         st.experimental_rerun()
     except Exception:
         st.stop()
+
+def get_movie_options(df):
+    if df.empty or df['movie_id'].isna().all() or df['title'].isna().all():
+        return []
+    return [f"{int(row['movie_id'])} - {row['title']}" for _, row in df.iterrows() if pd.notna(row['movie_id']) and pd.notna(row['title'])]
 
 # -----------------------------
 # Streamlit UI
@@ -193,15 +202,14 @@ elif menu == "User Login":
             filtered = df[((df['genre']==genre)|(genre=="All")) & ((df['language']==language)|(language=="All")) & (df['imdb_rating']>=rating)]
             st.dataframe(filtered,use_container_width=True)
         elif user_menu == "Recommendations":
-            with st.form("user_rec_form"):
-                base = st.text_input("Type movie title for recommendations")
-                topn = st.number_input("Top N",1,20,5)
-                if st.form_submit_button("Get Recommendations"):
-                    recs = get_recommendations(df, base, topn)
-                    if recs.empty:
-                        st.warning("No recommendations found")
-                    else:
-                        st.dataframe(recs,use_container_width=True)
+            base = st.text_input("Type movie title for recommendations")
+            topn = st.number_input("Top N",1,20,5)
+            if st.button("Get recommendations"):
+                recs = get_recommendations(df, base, topn)
+                if recs.empty:
+                    st.warning("No recommendations found")
+                else:
+                    st.dataframe(recs,use_container_width=True)
         elif user_menu == "Logout":
             safe_logout()
 
@@ -226,8 +234,10 @@ elif menu == "Admin Login":
         st.subheader("👑 Admin Dashboard")
         admin_menu = st.selectbox("Admin actions",["Home","Add Movie","Update Movie","Delete Movie","Filter Movies","Recommendations","Logout"])
         df = load_movies()
+
         if admin_menu=="Home":
             st.dataframe(df,use_container_width=True)
+
         elif admin_menu=="Add Movie":
             with st.form("add_movie_form",clear_on_submit=True):
                 t = st.text_input("Title")
@@ -243,48 +253,58 @@ elif menu == "Admin Login":
                         st.success("Movie added")
                     except Exception as e:
                         st.error(f"Add movie failed: {e}")
+
         elif admin_menu=="Update Movie":
-            if not df.empty:
-                sel = st.selectbox("Select movie", df.apply(lambda r:f"{r['movie_id']} - {r['title']}",axis=1))
-                movie_id = int(sel.split(" - ")[0])
-                row = df[df['movie_id']==movie_id].iloc[0]
-                with st.form("update_movie_form"):
-                    new_title = st.text_input("Title", value=row['title'])
-                    new_genre = st.text_input("Genre", value=row['genre'] or "")
-                    new_rating = st.number_input("Rating", value=float(row['imdb_rating'] or 0.0), step=0.1)
-                    if st.form_submit_button("Update Movie"):
-                        try:
-                            update_movie(movie_id, new_title.strip(), new_genre.strip(), new_rating)
-                            st.success("Movie updated successfully")
-                            df = load_movies()
-                        except Exception as e:
-                            st.error(f"Update failed: {e}")
-        elif admin_menu=="Delete Movie":
-            if not df.empty:
-                sel = st.selectbox("Select movie to delete", df.apply(lambda r:f"{r['movie_id']} - {r['title']}",axis=1))
-                movie_id = int(sel.split(" - ")[0])
-                if st.button("Delete Movie"):
+            sel_options = get_movie_options(df)
+            if sel_options:
+                sel = st.selectbox("Select movie", sel_options)
+                if sel:
                     try:
+                        movie_id = int(sel.split(" - ")[0])
+                        row = df[df['movie_id']==movie_id].iloc[0]
+                        with st.form("update_movie_form"):
+                            new_title = st.text_input("Title", value=row['title'] or "")
+                            new_genre = st.text_input("Genre", value=row['genre'] or "")
+                            new_rating = st.number_input("Rating", value=float(row['imdb_rating'] or 0.0), step=0.1)
+                            if st.form_submit_button("Update Movie"):
+                                update_movie(movie_id, new_title.strip(), new_genre.strip(), new_rating)
+                                st.success("Movie updated successfully")
+                    except Exception as e:
+                        st.error(f"Update failed: {e}")
+            else:
+                st.info("No movies available to update")
+
+        elif admin_menu=="Delete Movie":
+            sel_options = get_movie_options(df)
+            if sel_options:
+                sel = st.selectbox("Select movie to delete", sel_options)
+                if sel and st.button("Delete Movie"):
+                    try:
+                        movie_id = int(sel.split(" - ")[0])
                         delete_movie(movie_id)
                         st.success("Movie deleted")
                     except Exception as e:
                         st.error(f"Delete failed: {e}")
+            else:
+                st.info("No movies available to delete")
+
         elif admin_menu=="Filter Movies":
             genre = st.selectbox("Genre", ["All"] + sorted(df['genre'].dropna().unique()))
             language = st.selectbox("Language", ["All"] + sorted(df['language'].dropna().unique()))
             rating = st.slider("Minimum rating",1.0,10.0,5.0)
             filtered = df[((df['genre']==genre)|(genre=="All")) & ((df['language']==language)|(language=="All")) & (df['imdb_rating']>=rating)]
             st.dataframe(filtered,use_container_width=True)
+
         elif admin_menu=="Recommendations":
-            with st.form("admin_rec_form"):
-                base = st.text_input("Type movie title for recommendations")
-                topn = st.number_input("Top N",1,20,5)
-                if st.form_submit_button("Get Recommendations"):
-                    recs = get_recommendations(df, base, topn)
-                    if recs.empty:
-                        st.warning("No recommendations found")
-                    else:
-                        st.dataframe(recs,use_container_width=True)
+            base = st.text_input("Type movie title for recommendations")
+            topn = st.number_input("Top N",1,20,5)
+            if st.button("Get Recommendations"):
+                recs = get_recommendations(df, base, topn)
+                if recs.empty:
+                    st.warning("No recommendations found")
+                else:
+                    st.dataframe(recs,use_container_width=True)
+
         elif admin_menu=="Logout":
             safe_logout()
 
