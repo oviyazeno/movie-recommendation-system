@@ -1,88 +1,116 @@
 # app.py
 import streamlit as st
 import pandas as pd
+from werkzeug.security import generate_password_hash, check_password_hash
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import linear_kernel
 import os
-import hashlib
-
-CSV_FILE = "users_movies.csv"  # your combined CSV
+import re
 
 # -----------------------------
-# Ensure file exists
+# CSV FILES
 # -----------------------------
-if not os.path.exists(CSV_FILE):
-    # Create file with headers if missing
-    pd.DataFrame(columns=["id","username_or_title","password_or_year","genre","director","rating","language","duration","added_on"]).to_csv(CSV_FILE, index=False, sep="\t")
+MOVIES_FILE = "movies.csv"
+USERS_FILE = "users.csv"
 
 # -----------------------------
-# Helper functions
+# Ensure files exist
 # -----------------------------
-def verify_scrypt(stored_hash, password):
-    """Verify scrypt password hash"""
-    try:
-        parts = stored_hash.split('$')
-        if len(parts) != 3:
-            return False
-        params, salt, hashed = parts
-        N, r, p, dklen = map(int, params.replace('scrypt:', '').split(':'))
-        new_hash = hashlib.scrypt(password.encode(), salt=salt.encode(), n=N, r=r, p=p, dklen=64).hex()
-        return new_hash == hashed
-    except:
-        return False
+if not os.path.exists(MOVIES_FILE):
+    pd.DataFrame(columns=["movie_id","title","release_year","genre","director","imdb_rating","language","duration_minutes"]).to_csv(MOVIES_FILE, index=False)
 
-def load_users_and_movies():
-    df = pd.read_csv(CSV_FILE, sep="\t", dtype=str)
-    # Users: password starts with scrypt
-    users = df[df['password_or_year'].str.startswith("scrypt", na=False)][['username_or_title','password_or_year']].set_index('username_or_title').to_dict()['password_or_year']
-    # Movies: password column not scrypt
-    movies = df[~df['password_or_year'].str.startswith("scrypt", na=False)][['username_or_title','password_or_year','genre','director','rating','language','duration','added_on']]
-    movies.columns = ['title','year','genre','director','rating','language','duration','added_on']
-    # Convert numeric columns
-    movies['rating'] = movies['rating'].astype(float)
-    movies['year'] = movies['year'].astype(int)
-    movies['duration'] = movies['duration'].astype(int)
-    return users, movies
+if not os.path.exists(USERS_FILE):
+    # default admin user: admin/admin123
+    pd.DataFrame([{"username":"admin","password_hash":generate_password_hash("admin123")}]).to_csv(USERS_FILE, index=False)
 
-def save_movies(movies_df):
-    df = pd.read_csv(CSV_FILE, sep="\t", dtype=str)
-    users_df = df[df['password_or_year'].str.startswith("scrypt", na=False)]
-    movies_df_copy = movies_df.copy()
-    movies_df_copy = movies_df_copy.reset_index(drop=True)
-    movies_df_copy.insert(0,'id', range(1,len(movies_df_copy)+1))
-    movies_df_copy = movies_df_copy[['id','title','year','genre','director','rating','language','duration','added_on']]
-    combined = pd.concat([users_df, movies_df_copy], ignore_index=True)
-    combined.to_csv(CSV_FILE, sep="\t", index=False, header=False)
+# -----------------------------
+# CSV helpers
+# -----------------------------
+def load_users():
+    return pd.read_csv(USERS_FILE)
+
+def save_users(df):
+    df.to_csv(USERS_FILE, index=False)
+
+def load_movies():
+    return pd.read_csv(MOVIES_FILE)
+
+def save_movies(df):
+    df.to_csv(MOVIES_FILE, index=False)
+
+# -----------------------------
+# Auth / User functions
+# -----------------------------
+def create_user(username, password):
+    df = load_users()
+    if username in df['username'].values:
+        raise ValueError("Username already exists")
+    hashed = generate_password_hash(password)
+    df = pd.concat([df, pd.DataFrame([{"username": username, "password_hash": hashed}])])
+    save_users(df)
+
+def authenticate_user(username, password):
+    df = load_users()
+    user = df[df['username'] == username]
+    if not user.empty and check_password_hash(user.iloc[0]['password_hash'], password):
+        return True
+    return False
 
 # -----------------------------
 # Movie functions
 # -----------------------------
 def add_movie(title, year, genre, director, rating, language, duration):
-    users, movies = load_users_and_movies()
-    new_movie = pd.DataFrame([{
-        'title': title, 'year': year, 'genre': genre, 'director': director,
-        'rating': rating, 'language': language, 'duration': duration, 'added_on': pd.Timestamp.now()
-    }])
-    movies = pd.concat([movies,new_movie], ignore_index=True)
-    save_movies(movies)
-    return movies
+    df = load_movies()
+    new_id = df['movie_id'].max() + 1 if not df.empty else 1
+    df = pd.concat([df, pd.DataFrame([{
+        "movie_id": new_id,
+        "title": title,
+        "release_year": year,
+        "genre": genre,
+        "director": director,
+        "imdb_rating": rating,
+        "language": language,
+        "duration_minutes": duration
+    }])])
+    save_movies(df)
 
-def update_movie(idx, title=None, genre=None, rating=None):
-    users, movies = load_users_and_movies()
-    if title: movies.at[idx,'title'] = title
-    if genre: movies.at[idx,'genre'] = genre
-    if rating: movies.at[idx,'rating'] = rating
-    save_movies(movies)
-    return movies
+def update_movie(movie_id, title=None, genre=None, rating=None):
+    df = load_movies()
+    if movie_id not in df['movie_id'].values:
+        raise ValueError("Movie not found")
+    if title: df.loc[df['movie_id']==movie_id,'title'] = title
+    if genre: df.loc[df['movie_id']==movie_id,'genre'] = genre
+    if rating is not None: df.loc[df['movie_id']==movie_id,'imdb_rating'] = rating
+    save_movies(df)
 
-def delete_movie(idx):
-    users, movies = load_users_and_movies()
-    movies = movies.drop(idx).reset_index(drop=True)
-    save_movies(movies)
-    return movies
+def delete_movie(movie_id):
+    df = load_movies()
+    df = df[df['movie_id'] != movie_id]
+    save_movies(df)
 
 # -----------------------------
-# Recommendation function
+# Alter table - add column
+# -----------------------------
+ALLOWED_TYPES = {
+    "VARCHAR(100)": "object",
+    "VARCHAR(255)": "object",
+    "INT": "int64",
+    "DECIMAL(3,1)": "float",
+    "DATETIME": "object"
+}
+
+def add_column_to_movies(col_name: str, col_type: str, allow_nulls: bool = True):
+    if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", col_name):
+        raise ValueError("Invalid column name. Use letters, numbers and underscore only (no spaces).")
+    if col_type not in ALLOWED_TYPES:
+        raise ValueError("Invalid column type.")
+    df = load_movies()
+    dtype = ALLOWED_TYPES[col_type]
+    df[col_name] = pd.Series([None]*len(df), dtype=dtype)
+    save_movies(df)
+
+# -----------------------------
+# Recommendation helper
 # -----------------------------
 def get_recommendations(df, base_title, topn=5):
     if df.empty or not base_title.strip():
@@ -99,116 +127,121 @@ def get_recommendations(df, base_title, topn=5):
     sim_scores = list(enumerate(cos_sim[base_idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1: topn+1]
     indices = [i[0] for i in sim_scores]
-    return df.iloc[indices][['title','genre','rating']]
+    return df.iloc[indices][['movie_id','title','genre','imdb_rating']]
 
 # -----------------------------
 # Logout helper
 # -----------------------------
-def safe_logout():
+def safe_logout_message_and_refresh():
     st.session_state.logged_in = False
     st.session_state.username = None
     st.session_state.role = None
     st.success("Logged out successfully.")
-    st.experimental_rerun()
+    try:
+        st.experimental_rerun()
+    except Exception:
+        st.markdown("<meta http-equiv='refresh' content='0'>", unsafe_allow_html=True)
+        st.stop()
 
 # -----------------------------
 # Streamlit UI
 # -----------------------------
-st.set_page_config(page_title="MovieDb", layout="wide")
+st.set_page_config(page_title="MovieApp (Admin + Users)", layout="wide")
 st.title("🎬 MovieDb — Admin & User Panel")
 
 if "logged_in" not in st.session_state:
-    st.session_state.logged_in=False
-    st.session_state.username=None
-    st.session_state.role=None
+    st.session_state.logged_in = False
+    st.session_state.username = None
+    st.session_state.role = None
 
-menu = st.sidebar.selectbox("Choose an action", ["Signup","User Login","Admin Login"])
-
-users, movies = load_users_and_movies()
+menu = st.sidebar.selectbox("Choose an action", ["Signup", "User Login", "Admin Login"])
 
 # -----------------------------
 # Signup
 # -----------------------------
-if menu=="Signup":
+if menu == "Signup":
     st.header("📝 Create new user")
     new_user = st.text_input("Choose username", key="signup_user")
     new_pass = st.text_input("Choose password", type="password", key="signup_pass")
     if st.button("Signup"):
         if not new_user or not new_pass:
-            st.error("Provide username and password")
+            st.error("Provide username and password.")
         else:
-            # Add user to CSV
-            hashed = f"scrypt:{new_pass}"  # Placeholder: in production use proper scrypt hash
-            users[new_user.strip()] = hashed
-            # Save users
-            df = pd.read_csv(CSV_FILE, sep="\t", dtype=str)
-            new_row = pd.DataFrame([[len(df)+1,new_user.strip(),hashed,'','','','','','']], columns=df.columns)
-            df = pd.concat([df,new_row], ignore_index=True)
-            df.to_csv(CSV_FILE, sep="\t", index=False, header=False)
-            st.success("User created. Now login from User Login")
+            try:
+                create_user(new_user.strip(), new_pass.strip())
+                st.success("User created. Now login from User Login.")
+            except Exception as e:
+                st.error(f"Signup failed: {e}")
 
 # -----------------------------
 # User Login
 # -----------------------------
-elif menu=="User Login":
-    if not st.session_state.logged_in or st.session_state.role!="user":
+elif menu == "User Login":
+    if not st.session_state.logged_in or st.session_state.role != "user":
         st.header("🔐 User Login")
-        username = st.text_input("Username", key="user_login_user")
-        password = st.text_input("Password", type="password", key="user_login_pass")
+        user = st.text_input("Username", key="user_login_user")
+        pwd = st.text_input("Password", type="password", key="user_login_pass")
         if st.button("Login as User"):
-            if username in users and verify_scrypt(users[username], password):
-                st.session_state.logged_in=True
-                st.session_state.username=username
-                st.session_state.role="user"
-                st.success(f"Welcome {username} (User)")
+            if authenticate_user(user, pwd):
+                st.session_state.logged_in = True
+                st.session_state.username = user
+                st.session_state.role = "user"
+                st.success(f"Welcome {user} (user).")
             else:
-                st.error("Invalid username or password")
-    if st.session_state.logged_in and st.session_state.role=="user":
+                st.error("Invalid username or password.")
+    if st.session_state.logged_in and st.session_state.role == "user":
         st.subheader("👤 User Dashboard")
         user_menu = st.selectbox("Choose", ["Home","Filter Movies","Recommendations","Logout"])
-        if user_menu=="Home":
-            st.dataframe(movies,use_container_width=True)
-        elif user_menu=="Filter Movies":
-            genre = st.selectbox("Genre", ["All"] + sorted(movies['genre'].dropna().unique()))
-            language = st.selectbox("Language", ["All"] + sorted(movies['language'].dropna().unique()))
+        df = load_movies()
+        if user_menu == "Home":
+            st.dataframe(df, use_container_width=True)
+        elif user_menu == "Filter Movies":
+            genre = st.selectbox("Genre", ["All"] + sorted(df['genre'].dropna().unique()))
+            language = st.selectbox("Language", ["All"] + sorted(df['language'].dropna().unique()))
             rating = st.slider("Minimum rating",1.0,10.0,5.0)
-            filtered = movies[((movies['genre']==genre)|(genre=="All")) & ((movies['language']==language)|(language=="All")) & (movies['rating']>=rating)]
+            filtered = df[((df['genre']==genre)|(genre=="All")) & ((df['language']==language)|(language=="All")) & (df['imdb_rating']>=rating)]
             st.dataframe(filtered,use_container_width=True)
-        elif user_menu=="Recommendations":
+        elif user_menu == "Recommendations":
             base = st.text_input("Type movie title for recommendations")
             topn = st.number_input("Top N",1,20,5)
             if st.button("Get recommendations"):
-                recs = get_recommendations(movies, base, topn)
+                recs = get_recommendations(df, base, topn)
                 if recs.empty:
                     st.warning("No recommendations found")
                 else:
                     st.dataframe(recs,use_container_width=True)
-        elif user_menu=="Logout":
-            safe_logout()
+        elif user_menu == "Logout":
+            safe_logout_message_and_refresh()
 
 # -----------------------------
 # Admin Login
 # -----------------------------
-elif menu=="Admin Login":
-    if not st.session_state.logged_in or st.session_state.role!="admin":
+elif menu == "Admin Login":
+    if not st.session_state.logged_in or st.session_state.role != "admin":
         st.header("🔐 Admin Login")
         admin_user = st.text_input("Admin username", key="admin_user")
         admin_pass = st.text_input("Admin password", type="password", key="admin_pass")
         if st.button("Login as Admin"):
-            if admin_user.lower()=="admin" and admin_user in users and verify_scrypt(users[admin_user], admin_pass):
-                st.session_state.logged_in=True
-                st.session_state.username=admin_user
-                st.session_state.role="admin"
-                st.success("Admin login successful")
+            if authenticate_user(admin_user, admin_pass) and admin_user.lower()=="admin":
+                st.session_state.logged_in = True
+                st.session_state.username = admin_user
+                st.session_state.role = "admin"
+                st.success("Admin login successful.")
             else:
-                st.error("Invalid admin credentials")
+                st.error("Invalid admin credentials.")
     if st.session_state.logged_in and st.session_state.role=="admin":
         st.subheader("👑 Admin Dashboard")
-        admin_menu = st.selectbox("Admin actions", ["Home","Add Movie","Update Movie","Delete Movie","Filter Movies","Recommendations","Logout"])
+        admin_menu = st.selectbox("Admin actions",[
+            "Home","Add Movie","Update Movie","Delete Movie",
+            "Alter Table - Add Column","Filter Movies","Recommendations","Logout"
+        ])
+        df = load_movies()
+        # Home
         if admin_menu=="Home":
-            st.dataframe(movies,use_container_width=True)
+            st.dataframe(df,use_container_width=True)
+        # Add Movie
         elif admin_menu=="Add Movie":
-            with st.form("add_movie_form", clear_on_submit=True):
+            with st.form("add_movie_form",clear_on_submit=True):
                 t = st.text_input("Title")
                 yr = st.number_input("Year",1800,2100,2020)
                 g = st.text_input("Genre")
@@ -217,42 +250,56 @@ elif menu=="Admin Login":
                 lang = st.text_input("Language")
                 dur = st.number_input("Duration (min)",1,1000,120)
                 if st.form_submit_button("Add Movie"):
-                    movies = add_movie(t,yr,g,d,r,lang,dur)
+                    add_movie(t.strip(), yr, g.strip(), d.strip(), r, lang.strip(), dur)
                     st.success("Movie added")
+        # Update Movie
         elif admin_menu=="Update Movie":
-            if not movies.empty:
-                sel = st.selectbox("Select movie", movies['title'])
-                idx = movies[movies['title']==sel].index[0]
-                new_title = st.text_input("Title", value=movies.at[idx,'title'])
-                new_genre = st.text_input("Genre", value=movies.at[idx,'genre'])
-                new_rating = st.number_input("Rating", value=float(movies.at[idx,'rating']), step=0.1)
+            if not df.empty:
+                sel = st.selectbox("Select movie", df.apply(lambda r:f"{r['movie_id']} - {r['title']}",axis=1))
+                movie_id = int(sel.split(" - ")[0])
+                row = df[df['movie_id']==movie_id].iloc[0]
+                new_title = st.text_input("Title",value=row['title'])
+                new_genre = st.text_input("Genre",value=row['genre'] or "")
+                new_rating = st.number_input("Rating",value=float(row['imdb_rating'] or 0.0),step=0.1)
                 if st.button("Update"):
-                    movies = update_movie(idx,new_title,new_genre,new_rating)
+                    update_movie(movie_id,new_title,new_genre,new_rating)
                     st.success("Movie updated")
+        # Delete Movie
         elif admin_menu=="Delete Movie":
-            if not movies.empty:
-                sel = st.selectbox("Select movie to delete", movies['title'])
-                idx = movies[movies['title']==sel].index[0]
-                if st.button("Delete"):
-                    movies = delete_movie(idx)
+            if not df.empty:
+                sel = st.selectbox("Select movie to delete", df.apply(lambda r:f"{r['movie_id']} - {r['title']}",axis=1))
+                movie_id = int(sel.split(" - ")[0])
+                if st.button("Delete Movie"):
+                    delete_movie(movie_id)
                     st.success("Movie deleted")
+        # Alter Table
+        elif admin_menu=="Alter Table - Add Column":
+            col_name = st.text_input("Column name")
+            col_type = st.selectbox("Column type", list(ALLOWED_TYPES.keys()))
+            allow_nulls = st.checkbox("Allow NULLs", value=True)
+            if st.button("Add Column"):
+                add_column_to_movies(col_name.strip(), col_type, allow_nulls)
+                st.success(f"Column '{col_name}' added to movies.")
+        # Filter Movies
         elif admin_menu=="Filter Movies":
-            genre = st.selectbox("Genre", ["All"] + sorted(movies['genre'].dropna().unique()))
-            language = st.selectbox("Language", ["All"] + sorted(movies['language'].dropna().unique()))
+            genre = st.selectbox("Genre", ["All"] + sorted(df['genre'].dropna().unique()))
+            language = st.selectbox("Language", ["All"] + sorted(df['language'].dropna().unique()))
             rating = st.slider("Minimum rating",1.0,10.0,5.0)
-            filtered = movies[((movies['genre']==genre)|(genre=="All")) & ((movies['language']==language)|(language=="All")) & (movies['rating']>=rating)]
+            filtered = df[((df['genre']==genre)|(genre=="All")) & ((df['language']==language)|(language=="All")) & (df['imdb_rating']>=rating)]
             st.dataframe(filtered,use_container_width=True)
+        # Recommendations
         elif admin_menu=="Recommendations":
             base = st.text_input("Type movie title for recommendations")
             topn = st.number_input("Top N",1,20,5)
             if st.button("Get"):
-                recs = get_recommendations(movies, base, topn)
+                recs = get_recommendations(df, base, topn)
                 if recs.empty:
                     st.warning("No recommendations found")
                 else:
                     st.dataframe(recs,use_container_width=True)
+        # Logout
         elif admin_menu=="Logout":
-            safe_logout()
+            safe_logout_message_and_refresh()
 
 st.sidebar.markdown("---")
 st.sidebar.write("Data stored in CSV files")
