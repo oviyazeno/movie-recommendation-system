@@ -62,7 +62,7 @@ def authenticate_user(username, password):
 def load_movies():
     df = pd.read_csv(MOVIES_FILE)
     
-    # --- FIX 1: Ensure columns exist, correct types, and handle nulls ---
+    # --- FIX: Ensure columns exist, correct types, and handle nulls ---
     for col in MOVIE_COLUMNS:
         if col not in df.columns:
             df[col] = None
@@ -105,7 +105,7 @@ def update_movie(movie_id, title=None, genre=None, rating=None):
         
     if title: df.loc[df['movie_id']==movie_id,'title'] = title.strip()
     if genre: df.loc[df['movie_id']==movie_id,'genre'] = genre.strip()
-    # FIX 2: Ensure rating is treated as a float
+    # FIX: Ensure rating is treated as a float
     if rating is not None: df.loc[df['movie_id']==movie_id,'imdb_rating'] = float(rating)
     save_movies(df)
 
@@ -118,7 +118,7 @@ def delete_movie(movie_id):
 # Recommendation function
 # -----------------------------
 def get_recommendations(df, base_title, topn=5):
-    # FIX 3: Recommendation logic correction
+    # FIX: Recommendation logic correction
     if df.empty or not base_title.strip():
         return pd.DataFrame()
     
@@ -177,6 +177,7 @@ def safe_logout():
     st.session_state.role = None
     st.success("Logged out successfully.")
     try:
+        # Keep rerun here for clean logout/UI switch
         st.experimental_rerun()
     except Exception:
         st.stop()
@@ -225,7 +226,7 @@ elif menu == "User Login":
                 st.session_state.username = user
                 st.session_state.role = "user"
                 st.success(f"Welcome {user} (user)")
-                st.experimental_rerun()
+                # REMOVED st.experimental_rerun() to fix login error
             else:
                 st.error("Invalid username or password")
 
@@ -238,7 +239,6 @@ elif menu == "User Login":
             st.dataframe(df,use_container_width=True)
             
         elif user_menu == "Filter Movies":
-            # Uses the cleaned data from load_movies()
             filter_df = df.copy() 
             genre_options = sorted(filter_df['genre'][filter_df['genre']!=''].unique())
             language_options = sorted(filter_df['language'][filter_df['language']!=''].unique())
@@ -247,7 +247,6 @@ elif menu == "User Login":
             language = st.selectbox("Language", ["All"] + language_options)
             rating = st.slider("Minimum rating",1.0,10.0,5.0)
             
-            # Filtering works reliably because imdb_rating is float and genre/language are non-null strings
             filtered = filter_df[
                 ((filter_df['genre']==genre)|(genre=="All")) & 
                 ((filter_df['language']==language)|(language=="All")) & 
@@ -282,7 +281,7 @@ elif menu == "Admin Login":
                 st.session_state.username = admin_user
                 st.session_state.role = "admin"
                 st.success("Admin login successful")
-                st.experimental_rerun()
+                # REMOVED st.experimental_rerun() to fix login error
             else:
                 st.error("Invalid admin credentials")
 
@@ -323,7 +322,7 @@ elif menu == "Admin Login":
                     movie_id = int(sel.split(" - ")[0])
                     row = df[df['movie_id']==movie_id].iloc[0]
 
-                    # FIX 4: Safely retrieve current rating for UI input
+                    # FIX: Safely retrieve current rating for UI input
                     current_rating = float(row['imdb_rating']) if pd.notna(row['imdb_rating']) else 0.0
                     
                     new_title = st.text_input("Title",value=row['title'])
@@ -332,11 +331,6 @@ elif menu == "Admin Login":
                     
                     if st.button("Update"):
                         try:
-                            # Only update if there is a change
-                            title_update = new_title if new_title.strip() != row['title'] else None
-                            genre_update = new_genre if new_genre.strip() != row['genre'] else None
-                            rating_update = new_rating if new_rating != current_rating else None
-                            
                             update_movie(movie_id, new_title, new_genre, new_rating)
                             st.success("Movie updated")
                             st.experimental_rerun()
@@ -360,7 +354,6 @@ elif menu == "Admin Login":
                             st.error(f"Delete failed: {e}")
                             
         elif admin_menu=="Filter Movies":
-            # Uses the cleaned data from load_movies()
             filter_df = df.copy() 
             genre_options = sorted(filter_df['genre'][filter_df['genre']!=''].unique())
             language_options = sorted(filter_df['language'][filter_df['language']!=''].unique())
@@ -369,7 +362,6 @@ elif menu == "Admin Login":
             language = st.selectbox("Language", ["All"] + language_options)
             rating = st.slider("Minimum rating",1.0,10.0,5.0)
             
-            # Filtering works reliably because imdb_rating is float and genre/language are non-null strings
             filtered = filter_df[
                 ((filter_df['genre']==genre)|(genre=="All")) & 
                 ((filter_df['language']==language)|(language=="All")) & 
