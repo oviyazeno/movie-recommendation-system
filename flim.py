@@ -12,6 +12,7 @@ import re
 # -----------------------------
 MOVIES_FILE = "movies.csv"
 USERS_FILE = "users.csv"
+# Define the column list for robustness checks
 MOVIE_COLUMNS = ["movie_id","title","release_year","genre","director","imdb_rating","language","duration_minutes"]
 
 # -----------------------------
@@ -42,8 +43,7 @@ def create_user(username, password):
     if username in df['username'].values:
         raise ValueError("Username already exists")
     hashed = generate_password_hash(password)
-    new_user_df = pd.DataFrame([{"username": username, "password_hash": hashed}])
-    df = pd.concat([df, new_user_df], ignore_index=True)
+    df = pd.concat([df, pd.DataFrame([{"username": username, "password_hash": hashed}])], ignore_index=True)
     save_users(df)
 
 def authenticate_user(username, password):
@@ -61,16 +61,16 @@ def authenticate_user(username, password):
 def load_movies():
     df = pd.read_csv(MOVIES_FILE)
     
-    # FIX 1: Ensure columns exist and enforce correct types for robust filtering/math.
+    # Ensure all columns exist
     for col in MOVIE_COLUMNS:
         if col not in df.columns:
             df[col] = None
 
-    # Ensure numeric columns are correct, handling potential NaN/nulls
+    # CRITICAL FIX 1: Enforce correct data types for robust functionality
     df['movie_id'] = pd.to_numeric(df['movie_id'], errors='coerce').astype('Int64')
     df['imdb_rating'] = pd.to_numeric(df['imdb_rating'], errors='coerce').astype(float)
     
-    # Ensure string columns are non-null strings for filtering/recommendations
+    # Ensure string columns are non-null strings
     for col in ["title", "genre", "director", "language"]:
         df[col] = df[col].fillna('').astype(str).str.strip()
         
@@ -83,6 +83,7 @@ def add_movie(title, year, genre, director, rating, language, duration):
     df = load_movies()
     new_id = df['movie_id'].max() + 1 if not df.empty and pd.notna(df['movie_id'].max()) else 1
     
+    # Use stripped title/genre/director for clean data
     new_movie_df = pd.DataFrame([{
         "movie_id": new_id,
         "title": title.strip(),
@@ -98,12 +99,15 @@ def add_movie(title, year, genre, director, rating, language, duration):
 
 def update_movie(movie_id, title=None, genre=None, rating=None):
     df = load_movies()
-    if not isinstance(movie_id, int) or movie_id not in df['movie_id'].values:
-        raise ValueError("Movie not found or invalid ID type")
+    # Ensure movie_id is treated as integer for comparison
+    movie_id = int(movie_id) 
+    
+    if movie_id not in df['movie_id'].values:
+        raise ValueError("Movie not found")
         
     if title: df.loc[df['movie_id']==movie_id,'title'] = title.strip()
     if genre: df.loc[df['movie_id']==movie_id,'genre'] = genre.strip()
-    # FIX 2: Ensure rating is treated as a float
+    # CRITICAL FIX 2: Ensure rating is explicitly a float
     if rating is not None: df.loc[df['movie_id']==movie_id,'imdb_rating'] = float(rating)
     save_movies(df)
 
@@ -116,36 +120,33 @@ def delete_movie(movie_id):
 # Recommendation function
 # -----------------------------
 def get_recommendations(df, base_title, topn=5):
-    # FIX 3: Corrected recommendation logic for indexing and null handling.
+    # CRITICAL FIX 3: Recommendation logic for clean data and correct indexing
     if df.empty or not base_title.strip():
         return pd.DataFrame()
     
     df_recs = df.copy()
     
+    # Combine features using cleaned strings (done in load_movies)
     df_recs['combined'] = df_recs['genre'] + " " + df_recs['director']
     
-    # Filter out entries with no features
+    # Filter out entries with no features for recommendation calculation
     df_recs = df_recs[df_recs['combined'].str.strip() != '']
-    
     if df_recs.empty:
         return pd.DataFrame()
 
-    # Find the movie index using its title
     matches = df_recs[df_recs['title'].str.contains(base_title, case=False, na=False)]
     if matches.empty:
         return pd.DataFrame() 
     
-    # Get the PANDAS index (label) of the first match
-    base_movie_idx_label = matches.index[0]
+    base_movie_idx_label = matches.index[0] # The Pandas index label
     
-    # Calculate TF-IDF
     vec = TfidfVectorizer(stop_words='english')
     try:
         tfidf = vec.fit_transform(df_recs['combined'])
     except ValueError:
         return pd.DataFrame()
 
-    # CRITICAL FIX: Find the POSITIONAL index (iloc) that matches the tfidf matrix index
+    # CRITICAL FIX: Get the POSITIONAL index (iloc) that matches the tfidf matrix index
     base_pos = df_recs.index.get_loc(base_movie_idx_label)
     
     # Calculate Cosine Similarity 
@@ -156,12 +157,10 @@ def get_recommendations(df, base_title, topn=5):
     # Sort and retrieve top N (excluding the movie itself)
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1: topn+1]
     
-    # Get the POSITIONAL indices (iloc) for the top scores
     indices_pos = [i[0] for i in sim_scores]
     
     # Return the recommended movies
     return df_recs.iloc[indices_pos][['movie_id','title','genre','imdb_rating']]
-
 
 # -----------------------------
 # Logout helper
@@ -220,7 +219,6 @@ elif menu == "User Login":
                 st.session_state.username = user
                 st.session_state.role = "user"
                 st.success(f"Welcome {user} (user)")
-                # RERUN REMOVED to fix login failure
             else:
                 st.error("Invalid username or password")
 
@@ -233,7 +231,7 @@ elif menu == "User Login":
             st.dataframe(df,use_container_width=True)
             
         elif user_menu == "Filter Movies":
-            # Filtering works correctly due to load_movies type fixes
+            # Filter options use cleaned, non-blank unique values
             filter_df = df.copy() 
             genre_options = sorted(filter_df['genre'][filter_df['genre']!=''].unique())
             language_options = sorted(filter_df['language'][filter_df['language']!=''].unique())
@@ -242,6 +240,7 @@ elif menu == "User Login":
             language = st.selectbox("Language", ["All"] + language_options)
             rating = st.slider("Minimum rating",1.0,10.0,5.0)
             
+            # Filtering is now robust due to load_movies type fixes
             filtered = filter_df[
                 ((filter_df['genre']==genre)|(genre=="All")) & 
                 ((filter_df['language']==language)|(language=="All")) & 
@@ -276,7 +275,6 @@ elif menu == "Admin Login":
                 st.session_state.username = admin_user
                 st.session_state.role = "admin"
                 st.success("Admin login successful")
-                # RERUN REMOVED to fix login failure
             else:
                 st.error("Invalid admin credentials")
 
@@ -307,18 +305,19 @@ elif menu == "Admin Login":
                         
         elif admin_menu=="Update Movie":
             if not df.empty:
-                df_selection = df[df['movie_id'].notna()] # Select rows with valid IDs
+                # Use only rows with a valid movie_id for selection
+                df_selection = df[df['movie_id'].notna()] 
                 if df_selection.empty:
-                    st.warning("No movies available to update.")
+                     st.warning("No movies available to update.")
                 else:
-                    # Create selection list using movie_id and title
+                    # Substitute 'No Title' for empty titles in the select box
                     selection_list = df_selection.apply(lambda r:f"{r['movie_id']} - {r['title'] or 'No Title'}",axis=1).tolist()
-                    sel = st.selectbox("Select movie to update", selection_list)
+                    sel = st.selectbox("Select movie", selection_list)
                     
                     movie_id = int(sel.split(" - ")[0])
                     row = df[df['movie_id']==movie_id].iloc[0]
-
-                    # FIX 4: Safely retrieve current rating for UI input
+                    
+                    # Safely retrieve current rating for UI input
                     current_rating = float(row['imdb_rating']) if pd.notna(row['imdb_rating']) else 0.0
                     
                     new_title = st.text_input("Title",value=row['title'])
@@ -327,7 +326,8 @@ elif menu == "Admin Login":
                     
                     if st.button("Update"):
                         try:
-                            update_movie(movie_id, new_title, new_genre, new_rating)
+                            # Pass movie_id as an integer
+                            update_movie(int(movie_id), new_title, new_genre, new_rating)
                             st.success("Movie updated")
                             st.experimental_rerun()
                         except Exception as e:
@@ -335,7 +335,7 @@ elif menu == "Admin Login":
                             
         elif admin_menu=="Delete Movie":
             if not df.empty:
-                # FIX 5: Allow selection of any row with a valid ID for deletion (even if title is blank)
+                # CRITICAL FIX 5: Allow selection of any row with a valid ID for deletion (even if title is blank)
                 df_selection = df[df['movie_id'].notna()] 
                 if df_selection.empty:
                     st.warning("No movies available to delete.")
@@ -357,6 +357,7 @@ elif menu == "Admin Login":
                 st.warning("No movies available to delete.")
                             
         elif admin_menu=="Filter Movies":
+            # Filter options use cleaned, non-blank unique values
             filter_df = df.copy() 
             genre_options = sorted(filter_df['genre'][filter_df['genre']!=''].unique())
             language_options = sorted(filter_df['language'][filter_df['language']!=''].unique())
@@ -365,6 +366,7 @@ elif menu == "Admin Login":
             language = st.selectbox("Language", ["All"] + language_options)
             rating = st.slider("Minimum rating",1.0,10.0,5.0)
             
+            # Filtering logic is robust now that types and nulls are handled in load_movies
             filtered = filter_df[
                 ((filter_df['genre']==genre)|(genre=="All")) & 
                 ((filter_df['language']==language)|(language=="All")) & 
