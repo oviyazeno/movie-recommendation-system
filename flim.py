@@ -42,7 +42,6 @@ def create_user(username, password):
     if username in df['username'].values:
         raise ValueError("Username already exists")
     hashed = generate_password_hash(password)
-    # Use pandas.concat for adding a new row
     new_user_df = pd.DataFrame([{"username": username, "password_hash": hashed}])
     df = pd.concat([df, new_user_df], ignore_index=True)
     save_users(df)
@@ -62,7 +61,7 @@ def authenticate_user(username, password):
 def load_movies():
     df = pd.read_csv(MOVIES_FILE)
     
-    # --- FIX: Ensure columns exist, correct types, and handle nulls ---
+    # FIX 1: Ensure columns exist and enforce correct types for robust filtering/math.
     for col in MOVIE_COLUMNS:
         if col not in df.columns:
             df[col] = None
@@ -99,13 +98,12 @@ def add_movie(title, year, genre, director, rating, language, duration):
 
 def update_movie(movie_id, title=None, genre=None, rating=None):
     df = load_movies()
-    # Check if movie_id exists and is an integer
     if not isinstance(movie_id, int) or movie_id not in df['movie_id'].values:
         raise ValueError("Movie not found or invalid ID type")
         
     if title: df.loc[df['movie_id']==movie_id,'title'] = title.strip()
     if genre: df.loc[df['movie_id']==movie_id,'genre'] = genre.strip()
-    # FIX: Ensure rating is treated as a float
+    # FIX 2: Ensure rating is treated as a float
     if rating is not None: df.loc[df['movie_id']==movie_id,'imdb_rating'] = float(rating)
     save_movies(df)
 
@@ -118,16 +116,15 @@ def delete_movie(movie_id):
 # Recommendation function
 # -----------------------------
 def get_recommendations(df, base_title, topn=5):
-    # FIX: Recommendation logic correction
+    # FIX 3: Corrected recommendation logic for indexing and null handling.
     if df.empty or not base_title.strip():
         return pd.DataFrame()
     
     df_recs = df.copy()
     
-    # Combined feature column created from clean strings (done in load_movies)
     df_recs['combined'] = df_recs['genre'] + " " + df_recs['director']
     
-    # Filter out entries with no features for recommendation calculation
+    # Filter out entries with no features
     df_recs = df_recs[df_recs['combined'].str.strip() != '']
     
     if df_recs.empty:
@@ -148,14 +145,12 @@ def get_recommendations(df, base_title, topn=5):
     except ValueError:
         return pd.DataFrame()
 
-    # CRITICAL FIX: Find the POSITIONAL index (iloc) of the base movie 
-    # within the df_recs dataframe (which matches the tfidf matrix index)
+    # CRITICAL FIX: Find the POSITIONAL index (iloc) that matches the tfidf matrix index
     base_pos = df_recs.index.get_loc(base_movie_idx_label)
     
-    # Calculate Cosine Similarity
+    # Calculate Cosine Similarity 
     cos_sim = linear_kernel(tfidf, tfidf)
     
-    # Get similarity scores for the base movie (using the positional index)
     sim_scores = list(enumerate(cos_sim[base_pos])) 
     
     # Sort and retrieve top N (excluding the movie itself)
@@ -164,7 +159,7 @@ def get_recommendations(df, base_title, topn=5):
     # Get the POSITIONAL indices (iloc) for the top scores
     indices_pos = [i[0] for i in sim_scores]
     
-    # Return the recommended movies using iloc on the clean df_recs
+    # Return the recommended movies
     return df_recs.iloc[indices_pos][['movie_id','title','genre','imdb_rating']]
 
 
@@ -177,7 +172,6 @@ def safe_logout():
     st.session_state.role = None
     st.success("Logged out successfully.")
     try:
-        # Keep rerun here for clean logout/UI switch
         st.experimental_rerun()
     except Exception:
         st.stop()
@@ -226,7 +220,7 @@ elif menu == "User Login":
                 st.session_state.username = user
                 st.session_state.role = "user"
                 st.success(f"Welcome {user} (user)")
-                # REMOVED st.experimental_rerun() to fix login error
+                # RERUN REMOVED to fix login failure
             else:
                 st.error("Invalid username or password")
 
@@ -239,6 +233,7 @@ elif menu == "User Login":
             st.dataframe(df,use_container_width=True)
             
         elif user_menu == "Filter Movies":
+            # Filtering works correctly due to load_movies type fixes
             filter_df = df.copy() 
             genre_options = sorted(filter_df['genre'][filter_df['genre']!=''].unique())
             language_options = sorted(filter_df['language'][filter_df['language']!=''].unique())
@@ -281,7 +276,7 @@ elif menu == "Admin Login":
                 st.session_state.username = admin_user
                 st.session_state.role = "admin"
                 st.success("Admin login successful")
-                # REMOVED st.experimental_rerun() to fix login error
+                # RERUN REMOVED to fix login failure
             else:
                 st.error("Invalid admin credentials")
 
@@ -312,17 +307,18 @@ elif menu == "Admin Login":
                         
         elif admin_menu=="Update Movie":
             if not df.empty:
-                df_selection = df[df['title']!='']
+                df_selection = df[df['movie_id'].notna()] # Select rows with valid IDs
                 if df_selection.empty:
                     st.warning("No movies available to update.")
                 else:
-                    selection_list = df_selection.apply(lambda r:f"{r['movie_id']} - {r['title']}",axis=1).tolist()
+                    # Create selection list using movie_id and title
+                    selection_list = df_selection.apply(lambda r:f"{r['movie_id']} - {r['title'] or 'No Title'}",axis=1).tolist()
                     sel = st.selectbox("Select movie to update", selection_list)
                     
                     movie_id = int(sel.split(" - ")[0])
                     row = df[df['movie_id']==movie_id].iloc[0]
 
-                    # FIX: Safely retrieve current rating for UI input
+                    # FIX 4: Safely retrieve current rating for UI input
                     current_rating = float(row['imdb_rating']) if pd.notna(row['imdb_rating']) else 0.0
                     
                     new_title = st.text_input("Title",value=row['title'])
@@ -339,12 +335,17 @@ elif menu == "Admin Login":
                             
         elif admin_menu=="Delete Movie":
             if not df.empty:
-                df_selection = df[df['title']!='']
+                # FIX 5: Allow selection of any row with a valid ID for deletion (even if title is blank)
+                df_selection = df[df['movie_id'].notna()] 
                 if df_selection.empty:
                     st.warning("No movies available to delete.")
                 else:
-                    sel = st.selectbox("Select movie to delete", df_selection.apply(lambda r:f"{r['movie_id']} - {r['title']}",axis=1))
+                    # Create selection list using movie_id and title, substituting 'No Title' if necessary
+                    selection_list = df_selection.apply(lambda r:f"{r['movie_id']} - {r['title'] or 'No Title'}",axis=1).tolist()
+                    
+                    sel = st.selectbox("Select movie to delete", selection_list)
                     movie_id = int(sel.split(" - ")[0])
+                    
                     if st.button("Delete Movie"):
                         try:
                             delete_movie(movie_id)
@@ -352,6 +353,8 @@ elif menu == "Admin Login":
                             st.experimental_rerun()
                         except Exception as e:
                             st.error(f"Delete failed: {e}")
+            else:
+                st.warning("No movies available to delete.")
                             
         elif admin_menu=="Filter Movies":
             filter_df = df.copy() 
